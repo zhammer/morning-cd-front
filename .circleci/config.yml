@@ -1,0 +1,96 @@
+version: 2.1
+
+jobs:
+  test:
+    executor: python-node-executor
+    environment:
+      PACT_DIRECTORY: .workspace/pacts
+    steps:
+      - checkout
+      - install-python-dependencies
+      - run:
+          name: Run mypy
+          command: pipenv run mypy front/
+      - run:
+          name: Run flake8
+          command: pipenv run flake8 front/
+      - run:
+          name: Run pytest
+          command: pipenv run pytest --junitxml=test-results/pytest/results.xml
+      - run:
+          name: Run behave (and generate consumer pact files)
+          command: pipenv run behave --junit --junit-directory=test-results/behave --no-color
+      - persist_to_workspace:
+          root: .workspace
+          paths:
+            - pacts
+      - store_test_results:
+          path: test-results
+
+  publish-feature-consumer-pacts:
+    executor: python-node-executor
+    environment:
+      PACT_DIRECTORY: .workspace/pacts
+    steps:
+      - install-pact-broker-client
+      - attach_workspace:
+          at: .workspace
+      - run:
+          name: Publish pacts
+          command: >-
+            pact-broker publish $PACT_DIRECTORY -a $CIRCLE_SHA1 --tag $CIRCLE_BRANCH -b $PACT_BROKER_HOST
+
+  check-consumer-pacts-verified:
+    executor: python-node-executor
+    steps:
+      - install-pact-broker-client
+      - run:
+          name: Check if consumer pacts are supported by provider master branches
+          command: >-
+            pact-broker can-i-deploy -a front --version $CIRCLE_SHA1 -b $PACT_BROKER_HOST
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - test
+      - publish-feature-consumer-pacts:
+          context: morningcd-pact-broker
+          requires:
+            - test
+      - check-consumer-pacts-verified:
+          context: morningcd-pact-broker
+          requires:
+            - publish-feature-consumer-pacts
+
+executors:
+  python-node-executor:
+    docker:
+      - image: circleci/python:3.7.1-stretch-node
+
+commands:
+  install-pact-broker-client:
+    steps:
+      - run: |
+          curl -LO https://github.com/pact-foundation/pact-ruby-standalone/releases/download/v1.63.0/pact-1.63.0-linux-x86_64.tar.gz
+          tar xzf pact-1.63.0-linux-x86_64.tar.gz --transform s/pact/pact_ruby_standalone/
+          sudo cp -r pact_ruby_standalone/bin/pact-broker /usr/bin
+          sudo cp -r pact_ruby_standalone/lib/* /usr/lib
+          rm -fr pact_ruby_standalone
+          rm -fr pact-1.63.0-linux-x86_64.tar.gz
+
+  install-python-dependencies:
+    description: "Install python dependencies from Pipfile.lock and cache results."
+    steps:
+      - restore_cache:
+          keys:
+            - pipenv-cache-{{ checksum "Pipfile.lock" }}
+            - pipenv-cache-
+      - run:
+          name: Install dependencies
+          command: pipenv sync --dev
+      - save_cache:
+          key: pipenv-cache-{{ checksum "Pipfile.lock" }}
+          paths:
+            - ~/.local
+            - ~/.cache

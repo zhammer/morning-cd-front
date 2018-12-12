@@ -6,7 +6,8 @@ from faaspact_maker import (
     PactMaker,
     ProviderState,
     RequestWithMatchers,
-    ResponseWithMatchers
+    ResponseWithMatchers,
+    matchers
 )
 
 import pytest
@@ -90,7 +91,7 @@ class TestFetchListen:
             ),
             response=ResponseWithMatchers(
                 status=404,
-                body={'message': 'No listen exists with id 1'}  # change to Like
+                body={'message': matchers.Like('No listen exists with id 1')}
             )
         ))
 

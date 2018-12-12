@@ -148,11 +148,11 @@
         },
         "faaspact-maker": {
             "hashes": [
-                "sha256:366444bcccf0253d05a350319d9b5f1a75a994311f7df4aa6715c2e9bc1e44dd",
-                "sha256:5ae5b28c50099ff38bed4720faaf0adc1ddfe2f146e45fe524f3990d5865930c"
+                "sha256:4cbb18040464e448acdd1ddac826410db930a6287bea096579a77aae1a6ebfc8",
+                "sha256:5a8e7a04b03d1a7f4c52031004979f2ac48472ec0a292ed3af65baddc309a1c6"
             ],
             "index": "pypi",
-            "version": "==0.0.12"
+            "version": "==0.0.13"
         },
         "flake8": {
             "hashes": [

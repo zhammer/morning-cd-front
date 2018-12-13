@@ -12,7 +12,7 @@ from faaspact_maker import (
 
 import pytest
 
-from front.definitions import Listen, MusicProvider, SortOrder, exceptions
+from front.definitions import Listen, ListenInput, MusicProvider, SortOrder, exceptions
 from front.gateways.listens import ListensServiceGateway
 
 
@@ -245,3 +245,113 @@ class TestFetchListens:
 
         # Then we get an empty list
         assert listens == []
+
+
+class TestSubmitListen:
+
+    def test_submits_listen_during_the_day(self) -> None:
+
+        # Given a listens service gateway
+        listens_service_gateway = ListensServiceGateway(api_key='xyz')
+
+        # And this pact with the listens service
+        pact = PactMaker(
+            'front', 'listens', 'https://micro.morningcd.com',
+            pact_directory=PACT_DIRECTORY
+        )
+        pact.add_interaction(Interaction(
+            description='a listen submission',
+            provider_states=(
+                ProviderState('its daytime at 11am on november 14th in new york'),
+                ProviderState('a spotify song exists with the id', params={'id': 'abcde'})
+            ),
+            request=RequestWithMatchers(
+                method='POST',
+                path='/listens',
+                body={
+                    'song_id': 'abcde',
+                    'song_provider': 'SPOTIFY',
+                    'listener_name': 'Zach',
+                    'note': 'I like this song!',
+                    'iana_timezone': 'America/New_York'
+                }
+            ),
+            response=ResponseWithMatchers(
+                status=200,
+                body={
+                    'id': matchers.Like('1'),
+                    'song_id': 'abcde',
+                    'song_provider': 'SPOTIFY',
+                    'listener_name': 'Zach',
+                    'note': 'I like this song!',
+                    'iana_timezone': 'America/New_York',
+                    'listen_time_utc': '2018-11-14T16:00:00'
+                }
+            )
+        ))
+
+        # When we submit a listen input to the listens service
+        with pact.start_mocking():
+            listen = listens_service_gateway.submit_listen(ListenInput(
+                song_id='abcde',
+                song_provider=MusicProvider.SPOTIFY,
+                listener_name='Zach',
+                note='I like this song!',
+                iana_timezone='America/New_York'
+            ))
+
+        # Then we get the persisted back from the listens service
+        expected_listen = Listen(
+            id='1',
+            listen_time_utc=datetime(2018, 11, 14, 16, 0, 0),
+            song_id='abcde',
+            song_provider=MusicProvider.SPOTIFY,
+            listener_name='Zach',
+            note='I like this song!',
+            iana_timezone='America/New_York'
+        )
+        assert listen == expected_listen
+
+    def test_raises_exception_if_submitted_at_night(self) -> None:
+
+        # Given a listens service gateway
+        listens_service_gateway = ListensServiceGateway(api_key='xyz')
+
+        # And this pact with the listens service
+        pact = PactMaker(
+            'front', 'listens', 'https://micro.morningcd.com',
+            pact_directory=PACT_DIRECTORY
+        )
+        pact.add_interaction(Interaction(
+            description='a listen submission',
+            provider_states=(
+                ProviderState('its after sunset at 9pm on november 14th in new york'),
+                ProviderState('a spotify song exists with the id', params={'id': 'abcde'})
+            ),
+            request=RequestWithMatchers(
+                method='POST',
+                path='/listens',
+                body={
+                    'song_id': 'abcde',
+                    'song_provider': 'SPOTIFY',
+                    'listener_name': 'Zach',
+                    'note': 'I like this song!',
+                    'iana_timezone': 'America/New_York'
+                }
+            ),
+            response=ResponseWithMatchers(
+                status=428,
+                body={'message': matchers.Like('You can only submit listens during the day.')}
+            )
+        ))
+
+        # When we submit a listen input to the listens service
+        with pact.start_mocking():
+            with pytest.raises(exceptions.ListensError):
+                listens_service_gateway.submit_listen(ListenInput(
+                    song_id='abcde',
+                    song_provider=MusicProvider.SPOTIFY,
+                    listener_name='Zach',
+                    note='I like this song!',
+                    iana_timezone='America/New_York'
+                ))

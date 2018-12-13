@@ -211,3 +211,37 @@ class TestFetchListens:
         assert listens[0].listen_time_utc == datetime(2018, 12, 6, 13, 30, 0)
         assert listens[1].listener_name == 'Dorothy'
         assert listens[1].listen_time_utc == datetime(2018, 12, 6, 12, 30, 0)
+
+    def test_fetches_empty_list_if_no_listens(self) -> None:
+
+        # Given a listens service gateway
+        listens_service_gateway = ListensServiceGateway(api_key='xyz')
+
+        # And this pact with the listens service
+        pact = PactMaker(
+            'front', 'listens', 'https://micro.morningcd.com',
+            pact_directory=PACT_DIRECTORY
+        )
+        pact.add_interaction(Interaction(
+            description='a request for listens',
+            provider_states=(ProviderState('there are no listens in the database'),),
+            request=RequestWithMatchers(
+                method='GET',
+                path='/listens',
+                query={
+                    'limit': ['10'],
+                    'sort_order': ['ascending']
+                }
+            ),
+            response=ResponseWithMatchers(
+                status=200,
+                body={'items': []}
+            )
+        ))
+
+        # When we request listens from the listens service
+        with pact.start_mocking():
+            listens = listens_service_gateway.fetch_listens(10, SortOrder.ASCENDING)
+
+        # Then we get an empty list
+        assert listens == []

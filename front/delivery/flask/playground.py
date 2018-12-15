@@ -1,12 +1,13 @@
 import os
 import webbrowser
 
-from flask import Flask
+from flask import Flask, jsonify
 
 from flask_graphql import GraphQLView
 
 from front.delivery.flask.util import create_default_context, is_flask_reload
 from front.delivery.graphql import schema
+from front.gateways.music import SpotifyGateway
 
 
 listens_service_api_key = os.environ['LISTENS_SERVICE_API_KEY']
@@ -31,6 +32,13 @@ app.add_url_rule(
         graphiql=True
     )
 )
+
+
+@app.route('/accesstoken')
+def access_token():  # type: ignore
+    access_token = SpotifyGateway.fetch_bearer_token(spotify_client_id, spotify_client_secret)
+    body = {'accessToken': access_token}
+    return jsonify(body)
 
 
 if is_flask_reload(os.environ):

@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "serverless": "^1.35.0",
+    "serverless-domain-manager": "^2.6.8",
+    "serverless-python-requirements": "^4.2.5"
+  }
+}

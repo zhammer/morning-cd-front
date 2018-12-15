@@ -1,0 +1,58 @@
+service: morning-cd-front
+
+provider:
+  name: aws
+  runtime: python3.7
+
+package:
+  include:
+    - front/**
+
+functions:
+  spotify-access-token:
+    description: Fetch spotify access token
+    handler:
+      front/delivery/aws_lambda/spotify_access_token.handler
+    events:
+      - http:
+          path: /accesstoken
+          method: get
+          cors:
+            origin: ${self:custom.config.ACCESS_CONTROL_ALLOW_ORIGIN}
+    environment:
+      SPOTIFY_CLIENT_ID: ${self:custom.secrets.SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${self:custom.secrets.SPOTIFY_CLIENT_SECRET}
+      ACCESS_CONTROL_ALLOW_ORIGIN: ${self:custom.config.ACCESS_CONTROL_ALLOW_ORIGIN}
+
+  graphql:
+    description: Universal graphql endpoint
+    handler:
+      front/delivery/aws_lambda/graphql.handler
+    events:
+      - http:
+          path: /graphql
+          method: post
+          cors:
+            origin: ${self:custom.config.ACCESS_CONTROL_ALLOW_ORIGIN}
+    environment:
+      SUNLIGHT_SERVICE_API_KEY: ${self:custom.secrets.SUNLIGHT_SERVICE_API_KEY}
+      LISTENS_SERVICE_API_KEY: ${self:custom.secrets.LISTENS_SERVICE_API_KEY}
+      SPOTIFY_CLIENT_ID: ${self:custom.secrets.SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${self:custom.secrets.SPOTIFY_CLIENT_SECRET}
+      ACCESS_CONTROL_ALLOW_ORIGIN: ${self:custom.config.ACCESS_CONTROL_ALLOW_ORIGIN}
+
+custom:
+  config:
+    ACCESS_CONTROL_ALLOW_ORIGIN: https://morningcd.com
+  customDomain:
+    domainName: api.morningcd.com
+    certificateName: "*.morningcd.com"
+  secrets:
+    SUNLIGHT_SERVICE_API_KEY: ${env:SUNLIGHT_SERVICE_API_KEY}
+    LISTENS_SERVICE_API_KEY: ${env:LISTENS_SERVICE_API_KEY}
+    SPOTIFY_CLIENT_ID: ${env:SPOTIFY_CLIENT_ID}
+    SPOTIFY_CLIENT_SECRET: ${env:SPOTIFY_CLIENT_SECRET}
+
+plugins:
+  - serverless-python-requirements
+  - serverless-domain-manager

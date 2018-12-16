@@ -32,10 +32,24 @@ def handler(event: Dict, context: Dict) -> Dict:
         context=front_context
     )
 
+    if _from_graphql_playground(event):
+        access_control_allow_origin = 'https://www.graphqlbin.com'
+    else:
+        access_control_allow_origin = os.environ.get('ACCESS_CONTROL_ALLOW_ORIGIN', '*')
+
     return {
         'statusCode': 200,
         'body': json.dumps(results[0].to_dict()),
         'headers': {
-            'Access-Control-Allow-Origin': os.environ.get('ACCESS_CONTROL_ALLOW_ORIGIN', '*')
+            'Access-Control-Allow-Origin': access_control_allow_origin
         }
     }
+
+
+def _from_graphql_playground(event: Dict) -> bool:
+    try:
+        origin: str = event['headers']['origin']
+    except (KeyError, ValueError):
+        return False
+
+    return origin == 'https://www.graphqlbin.com'

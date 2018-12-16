@@ -1,10 +1,9 @@
-"""Leading note here is that Graphene is a weird library with very little documentation. The feature
-(bug?) that this code takes advantage of is that resolvers that you'd expect to return graphene
-objects (ex: resolve_person) can actually return non-graphene classes (ex: a Person NamedTuple).
+"""Graphene resolvers look like classes but are actually metaprogram-y resolver interfaces.
+Each resolver describes how a graphql response can be resolved from some 'root' data structure.
+This isn't super intuitive and at the moment is not very well documented.
 
-So we can have:
+We can have something like:
 ```py
-
 class PersonNamedTuple(NamedTuple):
   first_name: str
   last_name: str
@@ -14,21 +13,21 @@ class PersonGraphQl(graphene.ObjectType):
   last_name: graphene.String()
   full_name: graphene.String()
 
-  def resolve_full_name(self: PersonNamedTuple) -> str:  # self is a PersonNamedTuple?
+  def resolve_full_name(root: PersonNamedTuple) -> str:  # root is a PersonNamedTuple.
     return self.first_name + ' ' + self.last_name
 
 class Query(graphene.ObjectType):
-  person = graphene.Field(person)
+  person = graphene.Field(PersonGraphQl)  # `person` is a PersonGraphQl type.
 
-  def resolve_person(self) -> PersonNamedTuple:  # resolve_person doesnt return a PersonGraphQl?
+  def resolve_person(root) -> PersonNamedTuple:  # But its resolver returns a PersonNamedTuple.
     return PersonNamedTuple('Michael', 'Jackson')
-
 ```
 
-This is mentioned in the docs: 'NOTE: The resolvers on a ObjectType are always treated as
-staticmethods, so the first argument to the resolver method self (or root) need not be an
-actual instance of the ObjectType.' But it still is a little funky, and even moreso for
-the relay connection classes.
+It's a little funky, and even funkier for the relay pagination stuff.
+
+From the docs:
+'NOTE: The resolvers on a ObjectType are always treated as staticmethods, so the first argument to
+the resolver method self (or root) need not be an actual instance of the ObjectType.'
 """
 from datetime import date, datetime
 from typing import List, Optional
@@ -46,7 +45,10 @@ GraphQlMusicProvider = graphene.Enum.from_enum(MusicProvider)
 
 
 class GraphQlSong(graphene.ObjectType):
-    """Resolver interface for a `Song`. Instantiated with a `morning_cd.definitions.Song`."""
+    """A song from a given music provider."""
+    class Meta:
+        name = 'Song'
+
     id = graphene.ID(required=True)
     name = graphene.String()
     vendor = GraphQlMusicProvider()
@@ -56,18 +58,21 @@ class GraphQlSong(graphene.ObjectType):
     image_medium_url = graphene.String()
     image_small_url = graphene.String()
 
-    def resolve_image_large_url(self: Song, info: ResolveInfo) -> str:
-        return self.image_url_by_size['large']
+    def resolve_image_large_url(root: Song, info: ResolveInfo) -> str:
+        return root.image_url_by_size['large']
 
-    def resolve_image_medium_url(self: Song, info: ResolveInfo) -> str:
-        return self.image_url_by_size['medium']
+    def resolve_image_medium_url(root: Song, info: ResolveInfo) -> str:
+        return root.image_url_by_size['medium']
 
-    def resolve_image_small_url(self: Song, info: ResolveInfo) -> str:
-        return self.image_url_by_size['small']
+    def resolve_image_small_url(root: Song, info: ResolveInfo) -> str:
+        return root.image_url_by_size['small']
 
 
 class GraphQlListen(graphene.ObjectType):
-    """Resolver interface for a `Listen`. Instantiated with a `morning_cd.definitions.Listen`."""
+    """A listen submitted by a user to morning cd."""
+    class Meta:
+        name = 'Listen'
+
     id = graphene.ID(required=True)
     song = graphene.Field(GraphQlSong)
     listener_name = graphene.String()
@@ -75,15 +80,12 @@ class GraphQlListen(graphene.ObjectType):
     note = graphene.String()
     iana_timezone = graphene.String()
 
-    def resolve_song(self: Listen, info: ResolveInfo) -> Song:
-        return use_listens.get_song_of_listen(info.context, self)
+    def resolve_song(root: Listen, info: ResolveInfo) -> Song:
+        return use_listens.get_song_of_listen(info.context, root)
 
 
 class ListenConnection(graphene.relay.Connection):
-    """Resolver interface for a `ListenConnection`. Graphene is a weird library, and right now all
-    of the resolving logic is in `Query.resolve_all_listens`. It'd be nice to move that logic here,
-    or (if I understand Graphene correctly) to `ListenConnectionField`.
-    """
+    """A collection of listens from morning cd with relay cursor-pagination."""
     class Meta:
         node = GraphQlListen
 
@@ -93,15 +95,16 @@ class ListenConnection(graphene.relay.Connection):
 
 
 class GraphQlSunlightWindow(graphene.ObjectType):
-    """Resolver interface for a `SunlightWindow`. Instantiated with a
-    `morning_cd.definitions.SunlightWindow`.
-    """
+    """The sunrise and sunset utc times for a location on a given date."""
+    class Meta:
+        name = 'SunlightWindow'
+
     sunrise_utc = graphene.DateTime(required=True)
     sunset_utc = graphene.DateTime(required=True)
 
 
 class Query(graphene.ObjectType):
-    """Root query resolver interface."""
+    """Root query type for morning cd."""
     listen = graphene.Field(GraphQlListen, args={'id': graphene.ID(required=True)})
 
     all_listens = graphene.relay.ConnectionField(
@@ -115,10 +118,10 @@ class Query(graphene.ObjectType):
         'on_date': graphene.Date(required=True)
     })
 
-    def resolve_listen(self, info: ResolveInfo, id: str) -> Listen:
+    def resolve_listen(root, info: ResolveInfo, id: str) -> Listen:
         return use_listens.get_listen(info.context, id)
 
-    def resolve_all_listens(self,
+    def resolve_all_listens(root,
                             info: ResolveInfo,
                             before: Optional[datetime] = None,
                             after: Optional[datetime] = None,
@@ -168,7 +171,7 @@ class Query(graphene.ObjectType):
         return [ListenConnection.Edge(node=listen, cursor=listen.listen_time_utc)  # type: ignore
                 for listen in listens]
 
-    def resolve_sunlight_window(self,
+    def resolve_sunlight_window(root,
                                 info: ResolveInfo,
                                 iana_timezone: str,
                                 on_date: date) -> SunlightWindow:
@@ -180,7 +183,10 @@ class Query(graphene.ObjectType):
 
 
 class GraphQlListenInput(graphene.InputObjectType):
-    """Input for submitting a listen."""
+    """Input for submitting a listen to morning cd."""
+    class Meta:
+        name = 'ListenInput'
+
     song_id = graphene.String(required=True)
     music_provider = GraphQlMusicProvider(default_value=GraphQlMusicProvider.SPOTIFY.value)
     listener_name = graphene.String(required=True)
@@ -189,13 +195,13 @@ class GraphQlListenInput(graphene.InputObjectType):
 
 
 class SubmitListen(graphene.Mutation):
-    """Mutation resolver interface for submitting a listen."""
+    """Mutation for submitting a listen to morning cd. Listens must be submitted during daytime."""
     class Arguments:
         input = GraphQlListenInput(required=True)
 
     Output = GraphQlListen
 
-    def mutate(self, info: ResolveInfo, input: GraphQlListenInput) -> Listen:
+    def mutate(root, info: ResolveInfo, input: GraphQlListenInput) -> Listen:
         listen = ListenInput(
             song_id=input.song_id,
             song_provider=MusicProvider(input.music_provider),
@@ -207,7 +213,7 @@ class SubmitListen(graphene.Mutation):
 
 
 class Mutation(graphene.ObjectType):
-    """Root mutation resolver class."""
+    """Root mutation type for morning cd."""
     submit_listen = SubmitListen.Field()
 
 

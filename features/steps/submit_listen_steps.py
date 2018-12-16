@@ -34,7 +34,7 @@ def step_impl(context, note):
 @when('I submit my listen to morning.cd')  # noqa: F811
 def step_impl(context):
     mutation = """
-      mutation submit($listenInput: GraphQlListenInput!) {
+      mutation submit($listenInput: ListenInput!) {
         submitListen(input: $listenInput) {
           id
           listenerName

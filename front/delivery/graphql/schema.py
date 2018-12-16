@@ -67,7 +67,7 @@ class GraphQlSong(graphene.ObjectType):
 
     id = graphene.ID(required=True)
     name = graphene.String()
-    vendor = GraphQlMusicProvider()
+    song_provider = GraphQlMusicProvider()
     artist_name = graphene.String()
     album_name = graphene.String()
     image_large_url = graphene.String()
@@ -204,7 +204,7 @@ class GraphQlListenInput(graphene.InputObjectType):
         name = 'ListenInput'
 
     song_id = graphene.String(required=True)
-    music_provider = GraphQlMusicProvider(default_value=GraphQlMusicProvider.SPOTIFY.value)
+    song_provider = GraphQlMusicProvider(default_value=GraphQlMusicProvider.SPOTIFY.value)
     listener_name = graphene.String(required=True)
     note = graphene.String(required=False)
     iana_timezone = graphene.String(required=True)
@@ -220,7 +220,7 @@ class SubmitListen(graphene.Mutation):
     def mutate(root, info: ResolveInfo, input: GraphQlListenInput) -> Listen:
         listen = ListenInput(
             song_id=input.song_id,
-            song_provider=MusicProvider(input.music_provider),
+            song_provider=MusicProvider(input.song_provider),
             listener_name=input.listener_name,
             note=input.note,
             iana_timezone=input.iana_timezone

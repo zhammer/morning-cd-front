@@ -3,25 +3,41 @@ Each resolver describes how a graphql response can be resolved from some 'root' 
 This isn't super intuitive and at the moment is not very well documented.
 
 We can have something like:
-```py
-class PersonNamedTuple(NamedTuple):
-  first_name: str
-  last_name: str
-
-class PersonGraphQl(graphene.ObjectType):
-  first_name: graphene.String()
-  last_name: graphene.String()
-  full_name: graphene.String()
-
-  def resolve_full_name(root: PersonNamedTuple) -> str:  # root is a PersonNamedTuple.
-    return self.first_name + ' ' + self.last_name
-
-class Query(graphene.ObjectType):
-  person = graphene.Field(PersonGraphQl)  # `person` is a PersonGraphQl type.
-
-  def resolve_person(root) -> PersonNamedTuple:  # But its resolver returns a PersonNamedTuple.
-    return PersonNamedTuple('Michael', 'Jackson')
-```
+>>> import json
+>>> from typing import NamedTuple
+>>> import graphene
+>>>
+>>> class PersonNamedTuple(NamedTuple):
+...     first_name: str
+...     last_name: str
+>>>
+>>> class PersonGraphQl(graphene.ObjectType):
+...     first_name = graphene.String()
+...     last_name = graphene.String()
+...     full_name = graphene.String()
+...
+...     def resolve_full_name(root: PersonNamedTuple, info) -> str:  # root is a PersonNamedTuple.
+...         return root.first_name + ' ' + root.last_name
+>>>
+>>> class Query(graphene.ObjectType):
+...     person = graphene.Field(PersonGraphQl)  # `person` is a PersonGraphQl type.
+...
+...     # But its resolver returns a PersonNamedTuple.
+...     def resolve_person(root, info) -> PersonNamedTuple:
+...         return PersonNamedTuple('Michael', 'Jackson')
+>>>
+>>> result = graphene.Schema(query=Query).execute('''
+... query person {
+...   person {
+...     firstName
+...     lastName
+...     fullName
+...   }
+... }
+... ''')
+>>>
+>>> print(json.dumps(result.data))
+{"person": {"firstName": "Michael", "lastName": "Jackson", "fullName": "Michael Jackson"}}
 
 It's a little funky, and even funkier for the relay pagination stuff.
 

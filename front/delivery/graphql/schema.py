@@ -3,25 +3,41 @@ Each resolver describes how a graphql response can be resolved from some 'root' 
 This isn't super intuitive and at the moment is not very well documented.
 
 We can have something like:
-```py
-class PersonNamedTuple(NamedTuple):
-  first_name: str
-  last_name: str
-
-class PersonGraphQl(graphene.ObjectType):
-  first_name: graphene.String()
-  last_name: graphene.String()
-  full_name: graphene.String()
-
-  def resolve_full_name(root: PersonNamedTuple) -> str:  # root is a PersonNamedTuple.
-    return self.first_name + ' ' + self.last_name
-
-class Query(graphene.ObjectType):
-  person = graphene.Field(PersonGraphQl)  # `person` is a PersonGraphQl type.
-
-  def resolve_person(root) -> PersonNamedTuple:  # But its resolver returns a PersonNamedTuple.
-    return PersonNamedTuple('Michael', 'Jackson')
-```
+>>> import json
+>>> from typing import NamedTuple
+>>> import graphene
+>>>
+>>> class PersonNamedTuple(NamedTuple):
+...     first_name: str
+...     last_name: str
+>>>
+>>> class PersonGraphQl(graphene.ObjectType):
+...     first_name = graphene.String()
+...     last_name = graphene.String()
+...     full_name = graphene.String()
+...
+...     def resolve_full_name(root: PersonNamedTuple, info) -> str:  # root is a PersonNamedTuple.
+...         return root.first_name + ' ' + root.last_name
+>>>
+>>> class Query(graphene.ObjectType):
+...     person = graphene.Field(PersonGraphQl)  # `person` is a PersonGraphQl type.
+...
+...     # But its resolver returns a PersonNamedTuple.
+...     def resolve_person(root, info) -> PersonNamedTuple:
+...         return PersonNamedTuple('Michael', 'Jackson')
+>>>
+>>> result = graphene.Schema(query=Query).execute('''
+... query person {
+...   person {
+...     firstName
+...     lastName
+...     fullName
+...   }
+... }
+... ''')
+>>>
+>>> print(json.dumps(result.data))
+{"person": {"firstName": "Michael", "lastName": "Jackson", "fullName": "Michael Jackson"}}
 
 It's a little funky, and even funkier for the relay pagination stuff.
 
@@ -51,7 +67,7 @@ class GraphQlSong(graphene.ObjectType):
 
     id = graphene.ID(required=True)
     name = graphene.String()
-    vendor = GraphQlMusicProvider()
+    song_provider = GraphQlMusicProvider()
     artist_name = graphene.String()
     album_name = graphene.String()
     image_large_url = graphene.String()
@@ -188,7 +204,7 @@ class GraphQlListenInput(graphene.InputObjectType):
         name = 'ListenInput'
 
     song_id = graphene.String(required=True)
-    music_provider = GraphQlMusicProvider(default_value=GraphQlMusicProvider.SPOTIFY.value)
+    song_provider = GraphQlMusicProvider(default_value=GraphQlMusicProvider.SPOTIFY.value)
     listener_name = graphene.String(required=True)
     note = graphene.String(required=False)
     iana_timezone = graphene.String(required=True)
@@ -204,7 +220,7 @@ class SubmitListen(graphene.Mutation):
     def mutate(root, info: ResolveInfo, input: GraphQlListenInput) -> Listen:
         listen = ListenInput(
             song_id=input.song_id,
-            song_provider=MusicProvider(input.music_provider),
+            song_provider=MusicProvider(input.song_provider),
             listener_name=input.listener_name,
             note=input.note,
             iana_timezone=input.iana_timezone

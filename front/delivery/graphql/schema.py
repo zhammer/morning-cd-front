@@ -47,6 +47,9 @@ GraphQlMusicProvider = graphene.Enum.from_enum(MusicProvider)
 
 class GraphQlSong(graphene.ObjectType):
     """Resolver interface for a `Song`. Instantiated with a `morning_cd.definitions.Song`."""
+    class Meta:
+        name = 'Song'
+
     id = graphene.ID(required=True)
     name = graphene.String()
     vendor = GraphQlMusicProvider()
@@ -68,6 +71,9 @@ class GraphQlSong(graphene.ObjectType):
 
 class GraphQlListen(graphene.ObjectType):
     """Resolver interface for a `Listen`. Instantiated with a `morning_cd.definitions.Listen`."""
+    class Meta:
+        name = 'Listen'
+
     id = graphene.ID(required=True)
     song = graphene.Field(GraphQlSong)
     listener_name = graphene.String()
@@ -96,6 +102,9 @@ class GraphQlSunlightWindow(graphene.ObjectType):
     """Resolver interface for a `SunlightWindow`. Instantiated with a
     `morning_cd.definitions.SunlightWindow`.
     """
+    class Meta:
+        name = 'SunlightWindow'
+
     sunrise_utc = graphene.DateTime(required=True)
     sunset_utc = graphene.DateTime(required=True)
 
@@ -181,6 +190,9 @@ class Query(graphene.ObjectType):
 
 class GraphQlListenInput(graphene.InputObjectType):
     """Input for submitting a listen."""
+    class Meta:
+        name = 'ListenInput'
+
     song_id = graphene.String(required=True)
     music_provider = GraphQlMusicProvider(default_value=GraphQlMusicProvider.SPOTIFY.value)
     listener_name = graphene.String(required=True)

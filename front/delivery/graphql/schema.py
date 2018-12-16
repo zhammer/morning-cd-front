@@ -59,14 +59,14 @@ class GraphQlSong(graphene.ObjectType):
     image_medium_url = graphene.String()
     image_small_url = graphene.String()
 
-    def resolve_image_large_url(self: Song, info: ResolveInfo) -> str:
-        return self.image_url_by_size['large']
+    def resolve_image_large_url(root: Song, info: ResolveInfo) -> str:
+        return root.image_url_by_size['large']
 
-    def resolve_image_medium_url(self: Song, info: ResolveInfo) -> str:
-        return self.image_url_by_size['medium']
+    def resolve_image_medium_url(root: Song, info: ResolveInfo) -> str:
+        return root.image_url_by_size['medium']
 
-    def resolve_image_small_url(self: Song, info: ResolveInfo) -> str:
-        return self.image_url_by_size['small']
+    def resolve_image_small_url(root: Song, info: ResolveInfo) -> str:
+        return root.image_url_by_size['small']
 
 
 class GraphQlListen(graphene.ObjectType):
@@ -81,8 +81,8 @@ class GraphQlListen(graphene.ObjectType):
     note = graphene.String()
     iana_timezone = graphene.String()
 
-    def resolve_song(self: Listen, info: ResolveInfo) -> Song:
-        return use_listens.get_song_of_listen(info.context, self)
+    def resolve_song(root: Listen, info: ResolveInfo) -> Song:
+        return use_listens.get_song_of_listen(info.context, root)
 
 
 class ListenConnection(graphene.relay.Connection):
@@ -119,10 +119,10 @@ class Query(graphene.ObjectType):
         'on_date': graphene.Date(required=True)
     })
 
-    def resolve_listen(self, info: ResolveInfo, id: str) -> Listen:
+    def resolve_listen(root, info: ResolveInfo, id: str) -> Listen:
         return use_listens.get_listen(info.context, id)
 
-    def resolve_all_listens(self,
+    def resolve_all_listens(root,
                             info: ResolveInfo,
                             before: Optional[datetime] = None,
                             after: Optional[datetime] = None,
@@ -172,7 +172,7 @@ class Query(graphene.ObjectType):
         return [ListenConnection.Edge(node=listen, cursor=listen.listen_time_utc)  # type: ignore
                 for listen in listens]
 
-    def resolve_sunlight_window(self,
+    def resolve_sunlight_window(root,
                                 info: ResolveInfo,
                                 iana_timezone: str,
                                 on_date: date) -> SunlightWindow:
@@ -202,7 +202,7 @@ class SubmitListen(graphene.Mutation):
 
     Output = GraphQlListen
 
-    def mutate(self, info: ResolveInfo, input: GraphQlListenInput) -> Listen:
+    def mutate(root, info: ResolveInfo, input: GraphQlListenInput) -> Listen:
         listen = ListenInput(
             song_id=input.song_id,
             song_provider=MusicProvider(input.music_provider),

@@ -1,10 +1,9 @@
-"""Leading note here is that Graphene is a weird library with very little documentation. The feature
-(bug?) that this code takes advantage of is that resolvers that you'd expect to return graphene
-objects (ex: resolve_person) can actually return non-graphene classes (ex: a Person NamedTuple).
+"""Graphene resolvers look like classes but are actually metaprogram-y resolver interfaces.
+Each resolver describes how a graphql response can be resolved from some 'root' data structure.
+This isn't super intuitive and at the moment is not very well documented.
 
-So we can have:
+We can have something like:
 ```py
-
 class PersonNamedTuple(NamedTuple):
   first_name: str
   last_name: str
@@ -14,21 +13,21 @@ class PersonGraphQl(graphene.ObjectType):
   last_name: graphene.String()
   full_name: graphene.String()
 
-  def resolve_full_name(self: PersonNamedTuple) -> str:  # self is a PersonNamedTuple?
+  def resolve_full_name(root: PersonNamedTuple) -> str:  # root is a PersonNamedTuple.
     return self.first_name + ' ' + self.last_name
 
 class Query(graphene.ObjectType):
-  person = graphene.Field(person)
+  person = graphene.Field(PersonGraphQl)  # `person` is a PersonGraphQl type.
 
-  def resolve_person(self) -> PersonNamedTuple:  # resolve_person doesnt return a PersonGraphQl?
+  def resolve_person(root) -> PersonNamedTuple:  # But its resolver returns a PersonNamedTuple.
     return PersonNamedTuple('Michael', 'Jackson')
-
 ```
 
-This is mentioned in the docs: 'NOTE: The resolvers on a ObjectType are always treated as
-staticmethods, so the first argument to the resolver method self (or root) need not be an
-actual instance of the ObjectType.' But it still is a little funky, and even moreso for
-the relay connection classes.
+It's a little funky, and even funkier for the relay pagination stuff.
+
+From the docs:
+'NOTE: The resolvers on a ObjectType are always treated as staticmethods, so the first argument to
+the resolver method self (or root) need not be an actual instance of the ObjectType.'
 """
 from datetime import date, datetime
 from typing import List, Optional

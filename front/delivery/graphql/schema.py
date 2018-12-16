@@ -46,7 +46,7 @@ GraphQlMusicProvider = graphene.Enum.from_enum(MusicProvider)
 
 
 class GraphQlSong(graphene.ObjectType):
-    """Resolver interface for a `Song`. Instantiated with a `morning_cd.definitions.Song`."""
+    """A song from a given music provider."""
     class Meta:
         name = 'Song'
 
@@ -70,7 +70,7 @@ class GraphQlSong(graphene.ObjectType):
 
 
 class GraphQlListen(graphene.ObjectType):
-    """Resolver interface for a `Listen`. Instantiated with a `morning_cd.definitions.Listen`."""
+    """A listen submitted by a user to morning cd."""
     class Meta:
         name = 'Listen'
 
@@ -86,10 +86,7 @@ class GraphQlListen(graphene.ObjectType):
 
 
 class ListenConnection(graphene.relay.Connection):
-    """Resolver interface for a `ListenConnection`. Graphene is a weird library, and right now all
-    of the resolving logic is in `Query.resolve_all_listens`. It'd be nice to move that logic here,
-    or (if I understand Graphene correctly) to `ListenConnectionField`.
-    """
+    """A collection of listens from morning cd with relay cursor-pagination."""
     class Meta:
         node = GraphQlListen
 
@@ -99,9 +96,7 @@ class ListenConnection(graphene.relay.Connection):
 
 
 class GraphQlSunlightWindow(graphene.ObjectType):
-    """Resolver interface for a `SunlightWindow`. Instantiated with a
-    `morning_cd.definitions.SunlightWindow`.
-    """
+    """The sunrise and sunset utc times for a location on a given date."""
     class Meta:
         name = 'SunlightWindow'
 
@@ -110,7 +105,7 @@ class GraphQlSunlightWindow(graphene.ObjectType):
 
 
 class Query(graphene.ObjectType):
-    """Root query resolver interface."""
+    """Root query type for morning cd."""
     listen = graphene.Field(GraphQlListen, args={'id': graphene.ID(required=True)})
 
     all_listens = graphene.relay.ConnectionField(
@@ -189,7 +184,7 @@ class Query(graphene.ObjectType):
 
 
 class GraphQlListenInput(graphene.InputObjectType):
-    """Input for submitting a listen."""
+    """Input for submitting a listen to morning cd."""
     class Meta:
         name = 'ListenInput'
 
@@ -201,7 +196,7 @@ class GraphQlListenInput(graphene.InputObjectType):
 
 
 class SubmitListen(graphene.Mutation):
-    """Mutation resolver interface for submitting a listen."""
+    """Mutation for submitting a listen to morning cd. Listens must be submitted during daytime."""
     class Arguments:
         input = GraphQlListenInput(required=True)
 
@@ -219,7 +214,7 @@ class SubmitListen(graphene.Mutation):
 
 
 class Mutation(graphene.ObjectType):
-    """Root mutation resolver class."""
+    """Root mutation type for morning cd."""
     submit_listen = SubmitListen.Field()
 
 

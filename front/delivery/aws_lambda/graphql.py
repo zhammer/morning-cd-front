@@ -4,8 +4,18 @@ from typing import Dict
 
 import graphql_server
 
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
 from front.delivery.aws_lambda import util
 from front.delivery.graphql import schema
+
+
+if os.environ.get('AWS_EXECUTION_ENV'):
+    sentry_sdk.init(
+        dsn='https://8f452b81ea4e4f188559a678cb0114fb@sentry.io/1358957',
+        integrations=[AwsLambdaIntegration()]
+    )
 
 
 def handler(event: Dict, context: Dict) -> Dict:

@@ -8,6 +8,7 @@ import graphql_server
 
 import sentry_sdk
 from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+from sentry_sdk.integrations.logging import ignore_logger
 
 from front.definitions import exceptions
 from front.delivery.aws_lambda import util
@@ -19,6 +20,8 @@ if os.environ.get('AWS_EXECUTION_ENV'):
         dsn='https://8f452b81ea4e4f188559a678cb0114fb@sentry.io/1358957',
         integrations=[AwsLambdaIntegration()]
     )
+    ignore_logger('graphql.execution.executor')
+    ignore_logger('graphql.execution.utils')
 
 
 def handler(event: Dict, context: Dict) -> Dict:

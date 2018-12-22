@@ -20,6 +20,7 @@ flask-graphql = "*"
 requests = "*"
 graphene = "*"
 graphql-server-core = "*"
+sentry-sdk = "*"
 
 [requires]
 python_version = "3.7"

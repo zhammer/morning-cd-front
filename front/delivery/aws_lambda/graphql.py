@@ -2,10 +2,23 @@ import json
 import os
 from typing import Dict
 
+from graphql.error.located_error import GraphQLLocatedError
+
 import graphql_server
 
+import sentry_sdk
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
+
+from front.definitions import exceptions
 from front.delivery.aws_lambda import util
 from front.delivery.graphql import schema
+
+
+if os.environ.get('AWS_EXECUTION_ENV'):
+    sentry_sdk.init(
+        dsn='https://8f452b81ea4e4f188559a678cb0114fb@sentry.io/1358957',
+        integrations=[AwsLambdaIntegration()]
+    )
 
 
 def handler(event: Dict, context: Dict) -> Dict:
@@ -31,6 +44,11 @@ def handler(event: Dict, context: Dict) -> Dict:
         query_data=query_data,
         context=front_context
     )
+
+    for error in (results[0].errors or []):
+        if isinstance(error, GraphQLLocatedError):
+            if not isinstance(error.original_error, exceptions.FrontException):
+                raise error.original_error
 
     if _from_graphql_playground(event):
         access_control_allow_origin = 'https://www.graphqlbin.com'

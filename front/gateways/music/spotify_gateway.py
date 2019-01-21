@@ -38,6 +38,11 @@ class SpotifyGateway(MusicGatewayABC):
             data={'grant_type': 'client_credentials'}
         )
 
+        if not r.status_code == requests.codes.all_good:
+            raise exceptions.MusicError(
+                f'Unexpected error code from spotify. "{r.status_code}: {r.text}"'
+            )
+
         return cast(str, r.json()['access_token'])
 
 

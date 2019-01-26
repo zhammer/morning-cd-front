@@ -3,6 +3,14 @@ service: morning-cd-front
 provider:
   name: aws
   runtime: python3.7
+  tracing: true
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "xray:PutTraceSegments"
+        - "xray:PutTelemetryRecords"
+      Resource:
+        - "*"
 
 package:
   include:
@@ -23,6 +31,7 @@ functions:
       SPOTIFY_CLIENT_ID: ${self:custom.secrets.SPOTIFY_CLIENT_ID}
       SPOTIFY_CLIENT_SECRET: ${self:custom.secrets.SPOTIFY_CLIENT_SECRET}
       ACCESS_CONTROL_ALLOW_ORIGIN: ${self:custom.config.ACCESS_CONTROL_ALLOW_ORIGIN}
+    tracing: false
 
   graphql:
     description: Universal graphql endpoint
@@ -67,3 +76,4 @@ custom:
 plugins:
   - serverless-python-requirements
   - serverless-domain-manager
+  - serverless-plugin-tracing

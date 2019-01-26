@@ -21,6 +21,7 @@ requests = "*"
 graphene = "*"
 graphql-server-core = "*"
 sentry-sdk = "*"
+aws-xray-sdk = "*"
 
 [requires]
 python_version = "3.7"

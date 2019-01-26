@@ -2,6 +2,8 @@ import json
 import os
 from typing import Dict
 
+from aws_xray_sdk.core import patch
+
 from graphql.error.located_error import GraphQLLocatedError
 
 import graphql_server
@@ -16,12 +18,17 @@ from front.delivery.graphql import schema
 
 
 if os.environ.get('AWS_EXECUTION_ENV'):
+    # setup sentry
     sentry_sdk.init(
         dsn='https://8f452b81ea4e4f188559a678cb0114fb@sentry.io/1358957',
         integrations=[AwsLambdaIntegration()]
     )
     ignore_logger('graphql.execution.executor')
     ignore_logger('graphql.execution.utils')
+
+    # setup xray patching
+    libraries = ('requests', 'boto3', 'botocore')
+    patch(libraries)
 
 
 def handler(event: Dict, context: Dict) -> Dict:

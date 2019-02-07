@@ -13,6 +13,8 @@ provider:
         - "*"
 
 package:
+  exclude:
+    - "**"
   include:
     - front/**
 

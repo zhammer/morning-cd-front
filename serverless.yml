@@ -42,7 +42,7 @@ functions:
     events:
       - http:
           path: /graphql
-          method: post
+          method: get
       - http:
           path: /graphql
           method: post

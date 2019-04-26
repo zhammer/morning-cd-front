@@ -43,6 +43,9 @@ functions:
       - http:
           path: /graphql
           method: post
+      - http:
+          path: /graphql
+          method: post
           cors:
             # preflight requests are permitted for all origins. this allows the lambda handler to
             # dynamically set the access-control-allow-origin header so that both morningcd.com and

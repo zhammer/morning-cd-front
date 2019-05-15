@@ -32,7 +32,7 @@ functions:
     environment:
       SPOTIFY_CLIENT_ID: ${self:custom.secrets.SPOTIFY_CLIENT_ID}
       SPOTIFY_CLIENT_SECRET: ${self:custom.secrets.SPOTIFY_CLIENT_SECRET}
-      ACCESS_CONTROL_ALLOW_ORIGIN: "*"
+      ACCESS_CONTROL_ALLOW_ORIGIN: ${self:custom.config.ACCESS_CONTROL_ALLOW_ORIGIN}
     tracing: false
 
   graphql:
@@ -68,7 +68,7 @@ functions:
 
 custom:
   config:
-    ACCESS_CONTROL_ALLOW_ORIGIN: https://morningcd.com
+    ACCESS_CONTROL_ALLOW_ORIGIN: "*"
   customDomain:
     domainName: api.morningcd.com
     certificateName: "*.morningcd.com"

@@ -60,16 +60,16 @@ def handler(event: Dict, context: Dict) -> Dict:
             if not isinstance(error.original_error, exceptions.FrontException):
                 raise error.original_error
 
-    if _from_graphql_playground(event):
-        access_control_allow_origin = 'https://www.graphqlbin.com'
-    else:
-        access_control_allow_origin = os.environ.get('ACCESS_CONTROL_ALLOW_ORIGIN', '*')
+    # if _from_graphql_playground(event):
+    #     access_control_allow_origin = 'https://www.graphqlbin.com'
+    # else:
+    #     access_control_allow_origin = os.environ.get('ACCESS_CONTROL_ALLOW_ORIGIN', '*')
 
     return {
         'statusCode': 200,
         'body': json.dumps(results[0].to_dict()),
         'headers': {
-            'Access-Control-Allow-Origin': access_control_allow_origin
+            'Access-Control-Allow-Origin': '*'
         }
     }
 
